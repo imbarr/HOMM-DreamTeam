@@ -26,5 +26,10 @@ namespace Homm.Client
             incidentNodes.Add(other);
             other.incidentNodes.Add(this);
         }
+
+        public override string ToString()
+        {
+            return String.Format("({0}, {1})", mapObjectData.Location.X, mapObjectData.Location.Y);
+        }
     }
 }

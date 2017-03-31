@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -25,14 +27,14 @@ namespace Homm.Client
             {
                 var x = mapObject.Location.X;
                 var y = mapObject.Location.Y;
-                if (mapObject.Wall == null)
+                if (mapObject.Wall == null && mapObject.NeutralArmy == null)
                 {
                     graph[x, y] = new Node(mapObject);
                     for (var dx = -1; dx <= 1; dx++)
                     {
                         for (var dy = -1; dy <= 1; dy++)
                         {
-                            if ((dx != 0 || dy != 0)
+                            if (Convertation.ToDirection(new Point(dx, dy), x) != null
                                 && InBounds(x + dx, y + dy)
                                 && graph[x + dx, y + dy] != null)
                             {
