@@ -10,7 +10,7 @@ namespace Homm.Client
 {
     class AdditionalConstants
     {
-        public readonly ReadOnlyDictionary<Terrain, double> MovementResistanceMultiplier =
+        public static readonly ReadOnlyDictionary<Terrain, double> MovementResistanceMultiplier =
             new ReadOnlyDictionary<Terrain, double>(new Dictionary<Terrain, double>
             {
                 {Terrain.Road, 0.75},
