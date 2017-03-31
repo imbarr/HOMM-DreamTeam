@@ -9,9 +9,9 @@ namespace Homm.Client
 {
     class Node
     {
-        private readonly MapObjectData mapObjectData;
-        private readonly List<Node> incidentNodes;
-        private readonly double weight;
+        public readonly MapObjectData mapObjectData;
+        public readonly List<Node> incidentNodes;
+        public readonly double weight;
 
         public Node(MapObjectData mapObjectData)
         {
