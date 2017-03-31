@@ -10,10 +10,23 @@ namespace Homm.Client
 {
     class Graph
     {
+        private readonly Node[,] graph;
         public Graph(MapData map)
         {
-            //TODO: Построение графа по карте
-            throw new NotImplementedException();
+            graph = new Node[map.Width, map.Height];
+            foreach (var mapObject in map.Objects)
+            {
+                var x = mapObject.Location.X;
+                var y = mapObject.Location.Y;
+                if (mapObject.Wall == null)
+                {
+                    graph[x, y] = new Node(mapObject);
+                    for (var dx = -1; dx <= 1; dx++)
+                    for (var dy = -1; dy <= 1; dy++)
+                        if (dy != dx && graph[x + dx, y + dy] != null)
+                                graph[x, y].Connect(graph[x + dx, y + dy]);
+                }
+            }
         }
     }
 }
