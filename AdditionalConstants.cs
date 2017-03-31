@@ -13,11 +13,11 @@ namespace Homm.Client
         public readonly ReadOnlyDictionary<Terrain, double> MovementResistanceMultiplier =
             new ReadOnlyDictionary<Terrain, double>(new Dictionary<Terrain, double>
             {
-                {Terrain.Road, 1.0},
-                {Terrain.Desert, 1.5},
-                {Terrain.Grass, 1.3},
-                {Terrain.Snow, 1.7},
-                {Terrain.Marsh, 1.7}
+                {Terrain.Road, 0.75},
+                {Terrain.Desert, 1.15},
+                {Terrain.Grass, 1.00},
+                {Terrain.Snow, 1.30},
+                {Terrain.Marsh, 1.30}
             });
     }
 }
