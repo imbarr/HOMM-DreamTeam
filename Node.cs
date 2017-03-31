@@ -15,6 +15,7 @@ namespace Homm.Client
         //TODO: расчет веса
         public Node(MapObjectData mapObject)
         {
+            incidentNodes = new List<Node>();
             mapObjectData = mapObject;
         }
 

@@ -57,21 +57,7 @@ namespace Homm.Client
                 sensorData = client.Move(e);
             sensorData = client.Move(Direction.RightDown);
             client.Exit();*/
-            sensorData = client.Move(Direction.RightDown);
-            sensorData = client.Move(Direction.RightUp);
-            sensorData = client.Move(Direction.RightDown);
-            sensorData = client.Move(Direction.RightUp);
-            sensorData = client.Move(Direction.RightDown);
-            sensorData = client.Move(Direction.RightUp);
-            sensorData = client.Move(Direction.RightDown);
-            sensorData = client.Move(Direction.RightUp);
-            var swi = 1;
-            while (true)
-            {
-                sensorData = client.Move(Direction.Down);
-                sensorData = client.Move(Direction.Up);
-                Console.WriteLine(HommRules.Current.MovementDuration);
-            }
+            var graph = new Graph(sensorData.Map);
         }
 
 

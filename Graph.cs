@@ -23,7 +23,8 @@ namespace Homm.Client
                     graph[x, y] = new Node(mapObject);
                     for (var dx = -1; dx <= 1; dx++)
                     for (var dy = -1; dy <= 1; dy++)
-                        if (dy != dx && graph[x + dx, y + dy] != null)
+                        if (dy != dx && x + dx >= 0 && x + dx < map.Width
+                            && y + dy >= 0 && y + dy < map.Height && graph[x + dx, y + dy] != null)
                                 graph[x, y].Connect(graph[x + dx, y + dy]);
                 }
             }
