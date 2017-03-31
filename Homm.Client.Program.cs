@@ -15,6 +15,7 @@ namespace Homm.Client
 
         public static void Main(string[] args)
         {
+            //ТЕСТ
             /*if (args.Length == 0)
                 args = new[] { "127.0.0.1", "18700" };
             var ip = args[0];
