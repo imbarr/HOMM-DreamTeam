@@ -12,37 +12,41 @@ namespace Homm.Client
     {
         public static Dictionary<Node, NodePathInfo> GetGraphPathInfo(Node start)
         {
-            var result = new Dictionary<Node, NodePathInfo>();
-            var currentPath = new LinkedList<Node>();
-            currentPath.AddLast(start);
-            result.Add(start, new NodePathInfo(currentPath, 0.0));
-            RegisterAllNeighbours(start, currentPath, result);
+            var result = new Dictionary<Node, NodePathInfo>
+            {
+                {start, new NodePathInfo(new LinkedSequence<Node>(start), 0.0)}
+            };
+            RegisterAllNeighbours(start, result);
             return result;
         }
 
-        private static void RegisterAllNeighbours(Node node, LinkedList<Node> path,
-            Dictionary<Node, NodePathInfo> GraphPathInfo)
+        private static void RegisterAllNeighbours(Node node, Dictionary<Node, NodePathInfo> GraphPathInfo)
         {
-            foreach (var neighbour in node.incidentNodes)
+            var nodePathInfo = GraphPathInfo[node];
+            foreach (var neighbour in node.IncidentNodes)
             {
-                var newTravelTime = GraphPathInfo[node].TravelTime + neighbour.weight;
+                var newTravelTime = nodePathInfo.TravelTime + neighbour.Weight;
                 if (!GraphPathInfo.ContainsKey(neighbour) || GraphPathInfo[neighbour].TravelTime > newTravelTime)
                 {
-                    var newPath = new LinkedList<Node>(GraphPathInfo[node].Path);
-                    newPath.AddLast(neighbour);
+                    var newPath = new LinkedSequence<Node>((LinkedSequence<Node>)nodePathInfo.Path);
+                    newPath.Add(neighbour);
                     GraphPathInfo[neighbour] = new NodePathInfo(newPath, newTravelTime);
-                    RegisterAllNeighbours(neighbour, path, GraphPathInfo);
+                    RegisterAllNeighbours(neighbour, GraphPathInfo);
                 }
             }
         }
 
-        public static LinkedList<Node> FindPathToClosest(Dictionary<Node, NodePathInfo> graphPathInfo, Func<Node, bool> isValidTarget)
+        public static IEnumerable<Node> FindPathToClosest(Dictionary<Node, NodePathInfo> graphPathInfo, Func<Node, bool> isTarget)
         {
             NodePathInfo minNodePathInfo = null;
-            foreach (var nodePathInfo in graphPathInfo.Where(p => isValidTarget(p.Key)))
+            foreach (var nodePathInfo in graphPathInfo.Where(p => isTarget(p.Key)).Select(p => p.Value))
             {
-                if (nodePathInfo.Value.TravelTime != 0 && (minNodePathInfo == null || nodePathInfo.Value.TravelTime < minNodePathInfo.TravelTime))
-                    minNodePathInfo = nodePathInfo.Value;
+                if (nodePathInfo.TravelTime != 0
+                    && (minNodePathInfo == null 
+                    || nodePathInfo.TravelTime < minNodePathInfo.TravelTime))
+                {
+                    minNodePathInfo = nodePathInfo;
+                }
             }
             return minNodePathInfo.Path;
         }

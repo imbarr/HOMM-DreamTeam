@@ -36,7 +36,7 @@ namespace Homm.Client
                 if (objectData.Wall != null)
                     Assert.AreEqual(null, graph[x, y]);
                 else
-                    Assert.AreEqual(objectData, graph[x, y].mapObjectData);
+                    Assert.AreEqual(objectData, graph[x, y].MapObjectData);
             }
             client.Exit();
         }

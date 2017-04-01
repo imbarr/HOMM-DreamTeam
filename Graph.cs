@@ -27,22 +27,18 @@ namespace Homm.Client
             {
                 var x = mapObject.Location.X;
                 var y = mapObject.Location.Y;
-                if (mapObject.Wall == null && mapObject.NeutralArmy == null)
-                {
-                    graph[x, y] = new Node(mapObject);
-                    for (var dx = -1; dx <= 1; dx++)
-                    {
-                        for (var dy = -1; dy <= 1; dy++)
+                if (mapObject.Wall != null)
+                    continue;
+
+                graph[x, y] = new Node(mapObject);
+                for (var dx = -1; dx <= 1; dx++)
+                    for (var dy = -1; dy <= 1; dy++)
+                        if (Convertation.ToDirection(new Point(dx, dy), x) != null
+                            && InBounds(x + dx, y + dy)
+                            && graph[x + dx, y + dy] != null)
                         {
-                            if (Convertation.ToDirection(new Point(dx, dy), x) != null
-                                && InBounds(x + dx, y + dy)
-                                && graph[x + dx, y + dy] != null)
-                            {
-                                graph[x, y].Connect(graph[x + dx, y + dy]);
-                            }
+                            graph[x, y].Connect(graph[x + dx, y + dy]);
                         }
-                    }
-                }
             }
         }
 
@@ -57,7 +53,7 @@ namespace Homm.Client
             {
                 if (InBounds(x, y))
                     return graph[x, y];
-                throw new ArgumentException();
+                throw new IndexOutOfRangeException();
             }
         }
     }

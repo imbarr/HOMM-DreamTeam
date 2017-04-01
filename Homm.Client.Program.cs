@@ -62,7 +62,7 @@ namespace Homm.Client
             {
                 var graph = new Graph(sensorData.Map);
                 var gpi = GraphRouteExtentions.GetGraphPathInfo(graph[sensorData.Location.X, sensorData.Location.Y]);
-                var path = GraphRouteExtentions.FindPathToClosest(gpi, n => n.mapObjectData.ResourcePile != null || n.mapObjectData.Dwelling != null && n.mapObjectData.Dwelling.Owner != "Left");
+                var path = GraphRouteExtentions.FindPathToClosest(gpi, n => n.MapObjectData.ResourcePile != null || n.MapObjectData.Dwelling != null && n.MapObjectData.Dwelling.Owner != "Left").Reverse();
                 var commandsSequence = new List<Direction>();
                 commandsSequence = Convertation.ToDirectionList(path);
                 foreach (var command in commandsSequence)

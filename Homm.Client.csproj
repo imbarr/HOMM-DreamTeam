@@ -58,6 +58,8 @@
   <ItemGroup>
     <Compile Include="AdditionalConstants.cs" />
     <Compile Include="Convertation.cs" />
+    <Compile Include="LinkedElement.cs" />
+    <Compile Include="LinkedSequence.cs" />
     <Compile Include="NodePathInfo.cs" />
     <Compile Include="Edge.cs" />
     <Compile Include="Graph.cs" />

@@ -9,10 +9,10 @@ namespace Homm.Client
 {
     class NodePathInfo
     {
-        public readonly LinkedList<Node> Path;
+        public readonly IEnumerable<Node> Path;
         public readonly double TravelTime;
 
-        public NodePathInfo(LinkedList<Node> path, double travelTime)
+        public NodePathInfo(IEnumerable<Node> path, double travelTime)
         {
             Path = path;
             TravelTime = travelTime;
