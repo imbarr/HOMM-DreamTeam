@@ -38,9 +38,9 @@ namespace Homm.Client
                 // Seed карты. Используйте этот параметр, чтобы получать одну и ту же карту и отлаживаться на ней.
                 // Иногда меняйте этот параметр, потому что ваш код должен хорошо работать на любой карте.
 
-                spectacularView: false, // Вы можете отключить графон, заменив параметр на false.
+                spectacularView: true, // Вы можете отключить графон, заменив параметр на false.
 
-                debugMap: true,
+                debugMap: false,
                 // Вы можете использовать отладочную простую карту, чтобы лучше понять, как устроен игоровой мир.
 
                 level: HommLevel.Level1, // Здесь можно выбрать уровень. На уровне два на карте присутствует оппонент.
@@ -57,23 +57,41 @@ namespace Homm.Client
                 sensorData = client.Move(e);
             sensorData = client.Move(Direction.RightDown);
             client.Exit();*/
-            var graph = new Graph(sensorData.Map);
-            var startNode = graph[sensorData.Location.X, sensorData.Location.Y];
-            var allSafeTarget = GraphRouteExtentions.FindSafeNode(startNode);
-            while (allSafeTarget.Count() != 0)
-            {
-                graph = new Graph(sensorData.Map);
-                startNode = graph[sensorData.Location.X, sensorData.Location.Y];
-                var gpi = GraphRouteExtentions.GetGraphPathInfo(graph[sensorData.Location.X, sensorData.Location.Y]);
-                var path = GraphRouteExtentions.FindPathToClosest(startNode, gpi, n => IsValidTarget(n)).Reverse();
-                var commandsSequence = new List<Direction>();
-                commandsSequence = Convertation.ToDirectionList(path);
-                foreach (var command in commandsSequence)
-                {
-                    sensorData = client.Move(command);
-                }
 
-                allSafeTarget = GraphRouteExtentions.FindSafeNode(startNode);
+
+            while (true)
+            {
+                var graph = new Graph(sensorData.Map);
+                var currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
+                if (currentNode.MapObjectData.Dwelling != null &&
+                    currentNode.MapObjectData.Dwelling.AvailableToBuyCount > 0)
+                {
+                    var amount = CanHire(sensorData, currentNode.MapObjectData.Dwelling);
+                    if (amount > 0)
+                        sensorData = client.HireUnits(amount);
+                }
+                var gpi = GraphRouteExtentions.GetGraphPathInfo(currentNode, n => n.MapObjectData.NeutralArmy != null);
+                var path = GraphRouteExtentions.FindPathToClosest(currentNode, gpi, n =>
+                    n.MapObjectData.Mine != null && n.MapObjectData.Mine.Owner != "Left"
+                    || n.MapObjectData.ResourcePile != null);
+                if (path == null)
+                {
+                    var fullGpi = GraphRouteExtentions.GetGraphPathInfo(currentNode, n => false);
+                    var enemyPath = GraphRouteExtentions.FindPathToClosest(currentNode, fullGpi,
+                        n => n.MapObjectData.NeutralArmy != null);
+                    if (IsWin(currentNode.MapObjectData.Hero, enemyPath.First().MapObjectData.NeutralArmy))
+                    {
+                        path = enemyPath;
+                    }
+                    else
+                    {
+                        path = GraphRouteExtentions.FindPathToClosest(currentNode, gpi, n => 
+                            n.MapObjectData.Dwelling != null && n.MapObjectData.Dwelling.AvailableToBuyCount > 0);
+                    }
+                }
+                var dirSequence = Convertation.ToDirectionList(path.Reverse());
+                foreach (var dir in dirSequence)
+                    sensorData = client.Move(dir);
             }
             //Console.WriteLine("Exit");
             //var newGpi = GraphRouteExtentions.GetGraphPathInfo(graph[sensorData.Location.X, sensorData.Location.Y]);
@@ -97,6 +115,29 @@ namespace Homm.Client
             //        sensorData = client.Move(command);
             //    }
             //}
+        }
+
+        public static bool IsWin(Hero hero, HoMM.ClientClasses.NeutralArmy neutralArmy)
+        {
+            if (hero.Army == null || hero.Army.Count == 0)
+                return false;
+            var nArmy = neutralArmy.Army;
+            var pair = new ArmiesPair(hero.Army, neutralArmy.Army);
+            return Combat.Resolve(pair).IsAttackerWin;
+        }
+
+        public static int CanHire(HommSensorData sensorData, HoMM.ClientClasses.Dwelling dwelling)
+        {
+            var available = dwelling.AvailableToBuyCount;
+            var priceForOne = UnitsConstants.Current.UnitCost[dwelling.UnitType];
+            var affordable = int.MaxValue;
+            foreach (var pair in priceForOne)
+            {
+                var n = sensorData.MyTreasury[pair.Key] / priceForOne[pair.Key];
+                if (n < affordable)
+                    affordable = n;
+            }
+            return available < affordable ? available : affordable;
         }
 
         public static bool IsValidTarget(Node node)

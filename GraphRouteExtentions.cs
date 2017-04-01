@@ -10,20 +10,20 @@ namespace Homm.Client
 {
     class GraphRouteExtentions
     {
-        public static Dictionary<Node, NodePathInfo> GetGraphPathInfo(Node start)
+        public static Dictionary<Node, NodePathInfo> GetGraphPathInfo(Node start, Func<Node, bool> IsObstacle)
         {
             var result = new Dictionary<Node, NodePathInfo>
             {
                 {start, new NodePathInfo(new LinkedSequence<Node>(start), 0.0)}
             };
-            RegisterAllNeighbours(start, result);
+            RegisterAllNeighbours(start, result, IsObstacle);
             return result;
         }
 
-        private static void RegisterAllNeighbours(Node node, Dictionary<Node, NodePathInfo> GraphPathInfo)
+        private static void RegisterAllNeighbours(Node node, Dictionary<Node, NodePathInfo> GraphPathInfo, Func<Node, bool> IsObstacle)
         {
             var nodePathInfo = GraphPathInfo[node];
-            foreach (var neighbour in node.IncidentNodes)
+            foreach (var neighbour in node.IncidentNodes.Where(n => !IsObstacle(n)))
             {
                 var newTravelTime = nodePathInfo.TravelTime + neighbour.Weight;
                 if (!GraphPathInfo.ContainsKey(neighbour) || GraphPathInfo[neighbour].TravelTime > newTravelTime)
@@ -31,7 +31,7 @@ namespace Homm.Client
                     var newPath = new LinkedSequence<Node>((LinkedSequence<Node>)nodePathInfo.Path);
                     newPath.Add(neighbour);
                     GraphPathInfo[neighbour] = new NodePathInfo(newPath, newTravelTime);
-                    RegisterAllNeighbours(neighbour, GraphPathInfo);
+                    RegisterAllNeighbours(neighbour, GraphPathInfo, IsObstacle);
                 }
             }
         }
@@ -48,15 +48,9 @@ namespace Homm.Client
                     minNodePathInfo = nodePathInfo;
                 }
             }
-            if (minNodePathInfo == null)//Избегаем Exception если minNodePathInfo.Path пустой, герой просто стоит
-            {
-                Console.WriteLine("Stop");
-                var result = new List<Node>() { lastNode };
-                return result;
-            }
-            return minNodePathInfo.Path;
+            return minNodePathInfo == null ? null : minNodePathInfo.Path;
         }
-        public static IEnumerable<Node> FindSafeNode(Node start)
+        /*public static IEnumerable<Node> FindSafeNode(Node start)
         {
             var visited = new HashSet<Node>();
             var queue = new Queue<Node>();
@@ -82,6 +76,6 @@ namespace Homm.Client
                 foreach (var incidentNode in node.IncidentNodes)
                     queue.Enqueue(incidentNode);
             }
-        }
+        }*/
     }
 }
