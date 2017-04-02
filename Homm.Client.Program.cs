@@ -7,14 +7,15 @@ using System.Collections.Generic;
 
 namespace Homm.Client
 {
-    class Program
+    static class Program
     {
         // Вставьте сюда свой личный CvarcTag для того, чтобы учавствовать в онлайн соревнованиях.
-        public static readonly Guid CvarcTag = Guid.Parse("00000000-0000-0000-0000-000000000000");
+        public static readonly Guid CvarcTag = Guid.Parse("dfe38d95-21a7-4b20-a527-ac6971263b20");
 
 
         public static void Main(string[] args)
         {
+            //195.151.21.246
             if (args.Length == 0)
                 args = new[] { "127.0.0.1", "18700" };
             var ip = args[0];
@@ -28,13 +29,13 @@ namespace Homm.Client
             var sensorData = client.Configurate(
                 ip, port, CvarcTag,
 
-                timeLimit: 120, // Продолжительность матча в секундах (исключая время, которое "думает" ваша программа). 
+                timeLimit: 90, // Продолжительность матча в секундах (исключая время, которое "думает" ваша программа). 
 
-                operationalTimeLimit: 2000, // Суммарное время в секундах, которое разрешается "думать" вашей программе. 
+                operationalTimeLimit: 20, // Суммарное время в секундах, которое разрешается "думать" вашей программе. 
                                             // Вы можете увеличить это время для отладки, чтобы ваш клиент не был отключен, 
                                             // пока вы разглядываете программу в режиме дебаггинга.
 
-                seed: 1,
+                seed: 4,
                 // Seed карты. Используйте этот параметр, чтобы получать одну и ту же карту и отлаживаться на ней.
                 // Иногда меняйте этот параметр, потому что ваш код должен хорошо работать на любой карте.
 
@@ -51,94 +52,47 @@ namespace Homm.Client
             // должен работать одинаково хорошо в обоих случаях.
             );
 
-            /*var path = new[] { Direction.RightDown, Direction.RightUp, Direction.RightDown, Direction.RightUp, Direction.LeftDown, Direction.Down, Direction.RightDown, Direction.RightDown, Direction.RightUp };
-            sensorData = client.HireUnits(1);
-            foreach (var e in path)
-                sensorData = client.Move(e);
-            sensorData = client.Move(Direction.RightDown);
-            client.Exit();*/
-
+            var commands = new Queue<Direction>();
 
             while (true)
             {
                 var graph = new Graph(sensorData.Map);
                 var currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
-                if (currentNode.MapObjectData.Dwelling != null &&
-                    currentNode.MapObjectData.Dwelling.AvailableToBuyCount > 0)
+
+                if (commands.Count > 0)
                 {
-                    var amount = CanHire(sensorData, currentNode.MapObjectData.Dwelling);
-                    if (amount > 0)
-                        sensorData = client.HireUnits(amount);
+                    sensorData = client.Move(commands.Dequeue());
+                    currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
+                    var forHire = currentNode.MaximumHireNumber(sensorData.MyTreasury);
+                    if(forHire > 0)
+                        sensorData = client.HireUnits(forHire);
+                    continue;
                 }
-                var gpi = GraphRouteExtentions.GetGraphPathInfo(currentNode, n => n.MapObjectData.NeutralArmy != null);
-                var path = GraphRouteExtentions.FindPathToClosest(currentNode, gpi, n =>
-                    n.MapObjectData.Mine != null && n.MapObjectData.Mine.Owner != "Left"
-                    || n.MapObjectData.ResourcePile != null);
+                
+                var gpi = Routing.GetGraphPathInfo(currentNode, n => n.MapObjectData.NeutralArmy != null);
+                var path = Routing.FindPathToClosest(currentNode, gpi, n =>
+                    n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, 7.0));
                 if (path == null)
                 {
-                    var fullGpi = GraphRouteExtentions.GetGraphPathInfo(currentNode, n => false);
-                    var enemyPath = GraphRouteExtentions.FindPathToClosest(currentNode, fullGpi,
-                        n => n.MapObjectData.NeutralArmy != null);
-                    if (IsWin(currentNode.MapObjectData.Hero, enemyPath.First().MapObjectData.NeutralArmy))
-                    {
-                        path = enemyPath;
-                    }
-                    else
-                    {
-                        path = GraphRouteExtentions.FindPathToClosest(currentNode, gpi, n => 
-                            n.MapObjectData.Dwelling != null && n.MapObjectData.Dwelling.AvailableToBuyCount > 0);
-                    }
+                    path = Routing.FindPathToClosest(currentNode, gpi, n =>
+                        n.IsValidDwelling(sensorData.MyTreasury, gpi[n].TravelTime, 7.0, 3));
                 }
-                var dirSequence = Convertation.ToDirectionList(path.Reverse());
-                foreach (var dir in dirSequence)
-                    sensorData = client.Move(dir);
+                if (path == null)
+                {
+                    path = Routing.FindPathToClosest(currentNode, gpi, n =>
+                        n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, double.MaxValue));
+                }
+                if (path == null)
+                {
+                    path = Routing.FindPathToClosest(currentNode, gpi, n =>
+                        n.IsValidDwelling(sensorData.MyTreasury, gpi[n].TravelTime, double.MaxValue, 3));
+                }
+
+                commands = Convertation.ToDirectionQueue(path.Reverse());
+                Console.WriteLine(path.First());
             }
-            //Console.WriteLine("Exit");
-            //var newGpi = GraphRouteExtentions.GetGraphPathInfo(graph[sensorData.Location.X, sensorData.Location.Y]);
-            //var newPath = GraphRouteExtentions.FindPathToClosest(newGpi, n => n.MapObjectData.NeutralArmy != null).Reverse();
-            //var newCommandsSequence = new List<Direction>();
-            //newCommandsSequence = Convertation.ToDirectionList(newPath);
-            //foreach (var command in newCommandsSequence)
-            //{
-            //    sensorData = client.Move(command);
-            //}
-
-            //for(var i = 1; i <= 30; i++)
-            //{
-            //    var graph = new Graph(sensorData.Map);
-            //    var gpi = GraphRouteExtentions.GetGraphPathInfo(graph[sensorData.Location.X, sensorData.Location.Y]);
-            //    var path = GraphRouteExtentions.FindPathToClosest(gpi, n => n.MapObjectData.ResourcePile != null || n.MapObjectData.Dwelling != null && n.MapObjectData.Dwelling.Owner != "Left").Reverse();
-            //    var commandsSequence = new List<Direction>();
-            //    commandsSequence = Convertation.ToDirectionList(path);
-            //    foreach (var command in commandsSequence)
-            //    {
-            //        sensorData = client.Move(command);
-            //    }
-            //}
         }
 
-        public static bool IsWin(Hero hero, HoMM.ClientClasses.NeutralArmy neutralArmy)
-        {
-            if (hero.Army == null || hero.Army.Count == 0)
-                return false;
-            var nArmy = neutralArmy.Army;
-            var pair = new ArmiesPair(hero.Army, neutralArmy.Army);
-            return Combat.Resolve(pair).IsAttackerWin;
-        }
-
-        public static int CanHire(HommSensorData sensorData, HoMM.ClientClasses.Dwelling dwelling)
-        {
-            var available = dwelling.AvailableToBuyCount;
-            var priceForOne = UnitsConstants.Current.UnitCost[dwelling.UnitType];
-            var affordable = int.MaxValue;
-            foreach (var pair in priceForOne)
-            {
-                var n = sensorData.MyTreasury[pair.Key] / priceForOne[pair.Key];
-                if (n < affordable)
-                    affordable = n;
-            }
-            return available < affordable ? available : affordable;
-        }
 
         public static bool IsValidTarget(Node node)
         {
@@ -191,10 +145,5 @@ namespace Homm.Client
             Console.WriteLine(infoMessage);
             Console.ResetColor();
         }
-
-
-
-
-       
     }
 }

@@ -8,7 +8,7 @@ using HoMM.ClientClasses;
 
 namespace Homm.Client
 {
-    class GraphRouteExtentions
+    static class Routing
     {
         public static Dictionary<Node, NodePathInfo> GetGraphPathInfo(Node start, Func<Node, bool> IsObstacle)
         {
@@ -22,14 +22,16 @@ namespace Homm.Client
 
         private static void RegisterAllNeighbours(Node node, Dictionary<Node, NodePathInfo> GraphPathInfo, Func<Node, bool> IsObstacle)
         {
+            if (IsObstacle(node))
+                return;
             var nodePathInfo = GraphPathInfo[node];
-            foreach (var neighbour in node.IncidentNodes.Where(n => !IsObstacle(n)))
+            foreach (var neighbour in node.IncidentNodes)
             {
                 var newTravelTime = nodePathInfo.TravelTime + neighbour.Weight;
                 if (!GraphPathInfo.ContainsKey(neighbour) || GraphPathInfo[neighbour].TravelTime > newTravelTime)
                 {
                     var newPath = new LinkedSequence<Node>((LinkedSequence<Node>)nodePathInfo.Path);
-                    newPath.Add(neighbour);
+                    newPath.AddFirst(neighbour);
                     GraphPathInfo[neighbour] = new NodePathInfo(newPath, newTravelTime);
                     RegisterAllNeighbours(neighbour, GraphPathInfo, IsObstacle);
                 }
@@ -50,32 +52,5 @@ namespace Homm.Client
             }
             return minNodePathInfo == null ? null : minNodePathInfo.Path;
         }
-        /*public static IEnumerable<Node> FindSafeNode(Node start)
-        {
-            var visited = new HashSet<Node>();
-            var queue = new Queue<Node>();
-            queue.Enqueue(start);
-            while (queue.Count != 0)
-            {
-                var node = queue.Dequeue();
-                if (node.MapObjectData.NeutralArmy != null)
-                {
-                    visited.Add(node);
-                }
-                if (visited.Contains(node))
-                {
-                    continue;
-                }
-                visited.Add(node);
-                if (node.MapObjectData.ResourcePile != null
-                    || node.MapObjectData.Dwelling != null && node.MapObjectData.Dwelling.Owner != "Left"
-                    || node.MapObjectData.Mine != null && node.MapObjectData.Mine.Owner != "Left")
-                {
-                    yield return node;
-                }
-                foreach (var incidentNode in node.IncidentNodes)
-                    queue.Enqueue(incidentNode);
-            }
-        }*/
     }
 }

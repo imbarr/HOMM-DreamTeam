@@ -63,11 +63,12 @@
     <Compile Include="NodePathInfo.cs" />
     <Compile Include="Edge.cs" />
     <Compile Include="Graph.cs" />
-    <Compile Include="GraphRouteExtentions.cs" />
+    <Compile Include="Routing.cs" />
     <Compile Include="GraphTests.cs" />
     <Compile Include="Homm.Client.Program.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Targeting.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

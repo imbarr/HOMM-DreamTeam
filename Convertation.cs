@@ -38,10 +38,10 @@ namespace Homm.Client
             return tuple == null ? null : (Direction?)tuple.Item2;
         }
 
-        public static List<Direction> ToDirectionList(IEnumerable<Node> path)
+        public static Queue<Direction> ToDirectionQueue(IEnumerable<Node> path)
         {
             var copy = path.ToList();
-            var result = new List<Direction>();
+            var result = new Queue<Direction>();
             var previous = copy.First();
             foreach (var node in copy.Skip(1))
             {
@@ -50,7 +50,7 @@ namespace Homm.Client
                 var direction = ToDirection(new Point(dx, dy), previous.Coords.X);
                 if(direction == null)
                     throw new ArgumentException();
-                result.Add((Direction)direction);
+                result.Enqueue((Direction)direction);
                 previous = node;
             }
             return result;

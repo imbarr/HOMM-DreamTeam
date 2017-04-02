@@ -20,7 +20,7 @@ namespace Homm.Client
             First = other.First;
         }
 
-        public void Add(T value)
+        public void AddFirst(T value)
         {
             var newElement = new LinkedElement<T>(value);
             newElement.Next = First;
