@@ -41,13 +41,13 @@ namespace Homm.Client
         public static IEnumerable<Node> FindPathToClosest(Node lastNode, Dictionary<Node, NodePathInfo> graphPathInfo, Func<Node, bool> isTarget)
         {
             NodePathInfo minNodePathInfo = null;
-            foreach (var nodePathInfo in graphPathInfo.Where(p => isTarget(p.Key)).Select(p => p.Value))
+            Node minNode = null;
+            foreach (var pair in graphPathInfo.Where(p => isTarget(p.Key)))
             {
-                if (nodePathInfo.TravelTime != 0
-                    && (minNodePathInfo == null
-                    || nodePathInfo.TravelTime < minNodePathInfo.TravelTime))
+                if (minNodePathInfo == null || pair.Value.TravelTime < minNodePathInfo.TravelTime)
                 {
-                    minNodePathInfo = nodePathInfo;
+                    minNodePathInfo = pair.Value;
+                    minNode = pair.Key;
                 }
             }
             return minNodePathInfo == null ? null : minNodePathInfo.Path;

@@ -21,8 +21,15 @@ namespace Homm.Client
             IncidentNodes = new List<Node>();
             MapObjectData = mapObjectData;
             Coords = new Point(mapObjectData.Location.X, mapObjectData.Location.Y);
-            Weight = HommRules.Current.MovementDuration *
-                     AdditionalConstants.MovementResistanceMultiplier[mapObjectData.Terrain];
+            Weight = CountWeight(mapObjectData);
+        }
+
+        private static double CountWeight(MapObjectData mapObjectData)
+        {
+            return mapObjectData.Dwelling == null || mapObjectData.Dwelling.UnitType == UnitType.Militia
+                ? HommRules.Current.MovementDuration *
+                  AdditionalConstants.MovementResistanceMultiplier[mapObjectData.Terrain]
+                : 0;
         }
 
         public void Connect(Node other)

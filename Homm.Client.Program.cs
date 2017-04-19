@@ -4,6 +4,7 @@ using HoMM.Sensors;
 using HoMM;
 using HoMM.ClientClasses;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace Homm.Client
 {
@@ -15,7 +16,8 @@ namespace Homm.Client
 
         public static void Main(string[] args)
         {
-            //195.151.21.246
+            //localhost: 127.0.0.1
+            //homm.ulearn.me 195.151.21.246
             if (args.Length == 0)
                 args = new[] { "127.0.0.1", "18700" };
             var ip = args[0];
@@ -26,6 +28,7 @@ namespace Homm.Client
             client.OnSensorDataReceived += Print;
             client.OnInfo += OnInfo;
 
+            var randomGenerator = new Random();
             var sensorData = client.Configurate(
                 ip, port, CvarcTag,
 
@@ -35,7 +38,7 @@ namespace Homm.Client
                                             // Вы можете увеличить это время для отладки, чтобы ваш клиент не был отключен, 
                                             // пока вы разглядываете программу в режиме дебаггинга.
 
-                seed: 4,
+                seed: 126,
                 // Seed карты. Используйте этот параметр, чтобы получать одну и ту же карту и отлаживаться на ней.
                 // Иногда меняйте этот параметр, потому что ваш код должен хорошо работать на любой карте.
 
@@ -59,19 +62,19 @@ namespace Homm.Client
                 var graph = new Graph(sensorData.Map);
                 var currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
 
-                if (commands.Count > 0)
-                {
-                    sensorData = client.Move(commands.Dequeue());
-                    currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
-                    var forHire = currentNode.MaximumHireNumber(sensorData.MyTreasury);
-                    if(forHire > 0)
-                        sensorData = client.HireUnits(forHire);
-                    continue;
-                }
                 
-                var gpi = Routing.GetGraphPathInfo(currentNode, n => n.MapObjectData.NeutralArmy != null);
+
+                var gpi = Routing.GetGraphPathInfo(currentNode, n =>
+                    n.IsObstacle(currentNode.Coords));
+
                 var path = Routing.FindPathToClosest(currentNode, gpi, n =>
-                    n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, 7.0));
+                    n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, 7.0, sensorData.MyRespawnSide));
+
+                if (path == null)
+                {
+                    path = Routing.FindPathToClosest(currentNode, gpi, n =>
+                        n.IsValidDwelling(sensorData.MyTreasury, gpi[n].TravelTime, 7.0, 10));
+                }
                 if (path == null)
                 {
                     path = Routing.FindPathToClosest(currentNode, gpi, n =>
@@ -80,26 +83,41 @@ namespace Homm.Client
                 if (path == null)
                 {
                     path = Routing.FindPathToClosest(currentNode, gpi, n =>
-                        n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, double.MaxValue));
+                        n.IsValidTarget(currentNode.MapObjectData.Hero, gpi[n].TravelTime, double.MaxValue, sensorData.MyRespawnSide));
                 }
                 if (path == null)
                 {
                     path = Routing.FindPathToClosest(currentNode, gpi, n =>
-                        n.IsValidDwelling(sensorData.MyTreasury, gpi[n].TravelTime, double.MaxValue, 3));
+                        n.IsValidDwelling(sensorData.MyTreasury, gpi[n].TravelTime, double.MaxValue, 0));
+                }
+                commands = Convertation.ToDirectionQueue(path.Reverse());
+
+                foreach (var node in currentNode.IncidentNodes)
+                {
+                    if (node.MapObjectData.Hero != null &&
+                        Targeting.IsWin(sensorData.MyArmy, node.MapObjectData.Hero.Army))
+                    {
+                        commands.Clear();
+                        commands.Enqueue((Direction)Convertation.ToDirection(new Point(
+                            node.Coords.X - currentNode.Coords.X, node.Coords.Y - currentNode.Coords.Y), currentNode.Coords.X));
+                    }
                 }
 
-                commands = Convertation.ToDirectionQueue(path.Reverse());
-                Console.WriteLine(path.First());
+                if (commands.Count > 0)
+                {
+                    sensorData = client.Move(commands.Dequeue());
+                    currentNode = graph[sensorData.Location.X, sensorData.Location.Y];
+                    if (currentNode.MapObjectData.Dwelling != null &&
+                        currentNode.MapObjectData.Dwelling.UnitType != UnitType.Militia)
+                    {
+                        var forHire = currentNode.MaximumHireNumber(sensorData.MyTreasury);
+                        if (forHire > 0)
+                            sensorData = client.HireUnits(forHire);
+                    }
+                }
             }
         }
 
-
-        public static bool IsValidTarget(Node node)
-        {
-            return node.MapObjectData.ResourcePile != null
-                || node.MapObjectData.Dwelling != null && node.MapObjectData.Dwelling.Owner != "Left"
-                || node.MapObjectData.Mine != null && node.MapObjectData.Mine.Owner != "Left";
-        }
         static void Print(HommSensorData data)
         {
             Console.WriteLine("---------------------------------");
